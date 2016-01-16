@@ -1,9 +1,9 @@
+# -*- coding: utf-8 -*-
 from sklearn import preprocessing
 import numpy as np
 import pandas as pd
 import matplotlib as matplot
 import re
-
 input_data_path = 'data/data_input.csv' #Data de entrada
 output_data_path = 'data/output_data.csv' #Data de salida - Vista Minable
 header_name = ['periodRenew','id','birthDate','age','civilStatus','gender','school',
@@ -23,7 +23,7 @@ header_name = ['periodRenew','id','birthDate','age','civilStatus','gender','scho
               'otherExpensesHouseholder','totalExpensesHouseholder','raiting','reviewsUsers']
 
 #Cargando los datos
-dataframe = pd.read_csv(input_data_path,skiprows=1,header=None)
+dataframe = pd.read_csv(input_data_path,skiprows=1,header=None,encoding='utf-8')
 output_dataframe = pd.DataFrame(columns = header_name)
 
 #Limpiando el periodo a renovar
@@ -42,17 +42,17 @@ output_dataframe.id = dataframe[2].drop_duplicates()
 #Limpiando la Fecha de Nacimiento
 dataframe[3] = dataframe[3].str.replace('[\s|/]','-').str.replace('^\d+\-\d+\-\d{2}$',lambda str: str.group(0)[:-2]+'19'+str.group(0)[-2:])
 output_dataframe.birthDate = pd.to_datetime(dataframe[3],errors='coerce',dayfirst=True) #formato yyyy-mm-dd
-
+output_dataframe.birthDate = output_dataframe.birthDate.fillna(output_dataframe.birthDate.mode().iloc[1])
 #Limpiando la Edad
 output_dataframe.age = dataframe[4].str.extract('(\d{2})',re.IGNORECASE).astype('int')
 
 #Limpiando el Edo Civil
 output_dataframe.civilStatus = dataframe[5].replace(['Viudo (a)','Casado (a)','Soltero (a)','Unido (a)'],[0,1,2,np.nan])
-output_dataframe.civilStatus.fillna(output_dataframe.civilStatus.mode().iloc[0]).astype('int')
+output_dataframe.civilStatus = output_dataframe.civilStatus.fillna(output_dataframe.civilStatus.mode().iloc[0]).astype('int')
 
 #Limpiando el Sexo y la Escuela
 output_dataframe.gender = dataframe[6].replace(['Femenino', 'Masculino'], [0,1])
-output_dataframe.school = dataframe[7].replace(['Enfermería','Bioanálisis'],[0,1])
+output_dataframe.school = dataframe[7].replace([u'Enfermería',u'Bioanálisis'],[0,1])
 
 #El ano de ingreso lo dejamos igual
 output_dataframe.admissionYear = dataframe[8]
@@ -76,7 +76,7 @@ output_dataframe.reasonChange = dataframe[12].fillna('NA')
 #El numero de materias inscritas la dejamos igual
 output_dataframe.coursesEnrolled = dataframe[13].astype('int')
 
-#Limpiando el numero de materias aprovadas
+#Limpiando el numero de materias aprobadas
 output_dataframe.coursesApproved = dataframe[14].str.extract('(\.*\d+)',re.IGNORECASE).astype('int')
 
 #El numero de materias retiradas la dejamos igual
@@ -97,5 +97,15 @@ output_dataframe.coursesFailedReason = dataframe[19].fillna('NA')
 #Limpiando la columna de cuantas veces ha inscrito la tesis
 
 output_dataframe.thesisEnrolled = dataframe[22].fillna(0).replace([r'P.+',r'S.+',r'M.+'],[1,2,3],regex=True)
+
+#Limpiando la columna de procedencia
+
+output_dataframe.origin = dataframe[23].replace([r'.*Libertador+.*',r'.*(Sucre|Baruta|El Hatillo|Chacao|Altos|Guarenas|Valles|Barlovento).*',r'Ara.*',r'Apu.*',ur'Tác.*',r'Var.*',r'Mon.*',r'Por.*',r'Nue*.',r'Tru*.',r'Lar.*',r'Bol.*',r'Bar.*',r'Suc.*',r'Anz.*',ur'Mér.*',r'Delta.*',r'Yar.*',ur'Guár.*'],range(19),regex=True).astype('int')
+
+#Limpiando la columna de residencia
+
+output_dataframe.residency = dataframe[24].replace([r'.*Libertador+.*',r'.*Sucre',r'.*Baruta',r'.*El Hatillo',r'.*Chacao',r'.*Altos',r'.*Guarenas',r'.*Valles'],range(8),regex=True)
+output_dataframe.residency = output_dataframe.residency.fillna(output_dataframe.residency.mode().iloc[0]).astype('int')
+
 
 output_dataframe.to_csv(output_data_path, encoding='utf-8',index=False)
