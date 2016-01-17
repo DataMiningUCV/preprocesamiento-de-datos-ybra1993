@@ -7,12 +7,11 @@ import re
 input_data_path = 'data/data_input.csv' #Data de entrada
 output_data_path = 'data/output_data.csv' #Data de salida - Vista Minable
 header_name = ['periodRenew','id','birthDate','age','civilStatus','gender','school',
-              'admissionYear','admissionForm','coursesSemester','isChangeAddress',
-              'reasonChange','coursesEnrolled','coursesApproved','coursesRemoved','coursesFailed',
+              'admissionYear','admissionForm','coursesSemester',
+              'coursesEnrolled','coursesApproved','coursesRemoved','coursesFailed',
               'weightedAverage','efficiency','coursesFailedReason','coursesCurrent',
               'isThesisEnroll','thesisEnrolled','origin','residency','roomies',
-              'houseType','isRent','addressHouse','isMarried','isBenefitUniversity',
-              'reasonAndYear','isEconomicActivity','typeEcoActivity','scholarship',
+              'houseType','isChangeAddress','isMarried','isBenefitUniversity','isEconomicActivity','scholarship',
               'contributionHouseholder','contributionFamily','contributionActivities',
               'contributionMonthlyTotal','foodExpenses','transportExpenses','medicalExpenses','dentalExpenses',
               'personalExpenses','rentExpenses','studyMaterialExpenses','recreationalExpenses',
@@ -71,7 +70,7 @@ output_dataframe.isBenefitUniversity = dataframe[30].replace(['Si','No'],[1,0]).
 output_dataframe.isEconomicActivity = dataframe[32].replace(['Si','No'],[1,0]).astype('int')
 
 #Limpiando el motivo de mudanza
-output_dataframe.reasonChange = dataframe[12].fillna('NA')
+#output_dataframe.reasonChange = dataframe[12].fillna('NA')
 
 #El numero de materias inscritas la dejamos igual
 output_dataframe.coursesEnrolled = dataframe[13].astype('int')
@@ -94,6 +93,9 @@ output_dataframe.efficiency = dataframe[18].astype('string').str.replace('\.',''
 #Limpiando la columna motivo de reprobacion
 output_dataframe.coursesFailedReason = dataframe[19].fillna('NA')
 
+#El numero de materias inscritas en el semestre actual lo dejamos igual
+output_dataframe.coursesCurrent = dataframe[20].astype('int')
+
 #Limpiando la columna de cuantas veces ha inscrito la tesis
 
 output_dataframe.thesisEnrolled = dataframe[22].fillna(0).replace([r'P.+',r'S.+',r'M.+'],[1,2,3],regex=True)
@@ -106,6 +108,20 @@ output_dataframe.origin = dataframe[23].replace([r'.*Libertador+.*',r'.*(Sucre|B
 
 output_dataframe.residency = dataframe[24].replace([r'.*Libertador+.*',r'.*Sucre',r'.*Baruta',r'.*El Hatillo',r'.*Chacao',r'.*Altos',r'.*Guarenas',r'.*Valles'],range(8),regex=True)
 output_dataframe.residency = output_dataframe.residency.fillna(output_dataframe.residency.mode().iloc[0]).astype('int')
+
+#Limpiando la columna con quien vive
+#HAY QUE ARREGLAR
+output_dataframe.roomies = dataframe[25]#.str.lower().replace([r'ambos.*',r'.*madre.*',r'.*padre.*',r'.*herman.*',r'.*sol(o|a)',r'.*maternos.*',r'.*paternos.*'],range(7),regex=True)
+
+#Limpiando la columna tipo de vivienda
+output_dataframe.houseType = dataframe[26].str.lower().replace([r'.*quinta.*',r'.*edific.*',r'.*urbano.*',r'.*rural.*',r'.*alquilada.*',r'.*vecindad.*',r'.*estudiantil.*'],range(7),regex=True)
+
+#Limpiando la columna de beca
+output_dataframe.scholarship = dataframe[34].apply(lambda x : 1500 if x <= 1500 else 2000).astype('float')
+
+#Limpiando las columnas de los ingresos/gastos/ingresosResponsableEconomico/gastosResponsableEconomico
+dataframe.ix[:,34:48] = dataframe.ix[:,34:48].replace(np.nan,0)
+dataframe.ix[:,52:63] = dataframe.ix[:,52:63].replace(np.nan,0)
 
 
 output_dataframe.to_csv(output_data_path, encoding='utf-8',index=False)
