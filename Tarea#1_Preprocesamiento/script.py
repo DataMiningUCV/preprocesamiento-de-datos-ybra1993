@@ -119,8 +119,31 @@ output_dataframe.houseType = dataframe[26].str.lower().replace([r'.*quinta.*',r'
 #Limpiando la columna de beca
 output_dataframe.scholarship = dataframe[34].apply(lambda x : 1500 if x <= 1500 else 2000).astype('float')
 
-#Limpiando las columnas de los ingresos/gastos/ingresosResponsableEconomico/gastosResponsableEconomico
-dataframe.ix[:,34:48] = dataframe.ix[:,34:48].replace(np.nan,0)
+#Limpiando las columnas de los ingresos y egresos del Estudiante
+
+dataframe.ix[:,35:48] = dataframe.ix[:,35:48].replace(np.nan,0)
+output_dataframe.contributionHouseholder = dataframe[35]
+output_dataframe.contributionFamily = dataframe[36]
+output_dataframe.contributionActivities = dataframe[37]
+#output_dataframe.contributionMonthlyTotal = dataframe[38] - (output_dataframe.scholarship + output_dataframe.contributionHouseholder + output_dataframe.contributionFamily + output_dataframe.contributionActivities)
+output_dataframe.foodExpenses = dataframe[39]
+output_dataframe.transportExpenses = dataframe[40]
+output_dataframe.medicalExpenses = dataframe[41]
+output_dataframe.dentalExpenses = dataframe[42]
+output_dataframe.personalExpenses = dataframe[43]
+output_dataframe.rentExpenses = dataframe[44]
+output_dataframe.studyMaterialExpenses = dataframe[45]
+output_dataframe.recreationalExpenses = dataframe[46]
+output_dataframe.otherExpenses = dataframe[47]
+#output_dataframe.totalExpenses = dataframe[48] - (output_dataframe.foodExpenses + output_dataframe.transportExpenses + output_dataframe.medicalExpenses + output_dataframe.dentalExpenses + output_dataframe.personalExpenses + output_dataframe.rentExpenses + output_dataframe.studyMaterialExpenses + output_dataframe.recreationalExpenses + output_dataframe.otherExpenses)
+
+#Limpiando la columna responsable economico
+output_dataframe.howHouseholder = dataframe[49].str.lower().replace([r'madre',r'padre',r'ambos.*',ur'cónyugue|esposo',r'.*(familiares|tia|hermano|hermana|abuela).*',r'usted.*|ninguno'],range(6),regex=True)
+
+#El numero de cargafamiliar lo dejamos igual
+
+output_dataframe.familyBurden = dataframe[50]
+
 dataframe.ix[:,52:63] = dataframe.ix[:,52:63].replace(np.nan,0)
 
 
