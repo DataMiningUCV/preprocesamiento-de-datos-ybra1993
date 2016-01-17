@@ -6,10 +6,10 @@ import matplotlib as matplot
 import re
 input_data_path = 'data/data_input.csv' #Data de entrada
 output_data_path = 'data/output_data.csv' #Data de salida - Vista Minable
-header_name = ['periodRenew','id','birthDate','age','civilStatus','gender','school',
+header_name = ['periodRenew','id','birthDate','civilStatus','gender','school',
               'admissionYear','admissionForm','coursesSemester',
               'coursesEnrolled','coursesApproved','coursesRemoved','coursesFailed',
-              'weightedAverage','efficiency','coursesFailedReason','coursesCurrent',
+              'weightedAverage','efficiency','coursesCurrent',
               'isThesisEnroll','thesisEnrolled','origin','residency','roomies',
               'houseType','isChangeAddress','isMarried','isBenefitUniversity','isEconomicActivity','scholarship',
               'contributionHouseholder','contributionFamily','contributionActivities',
@@ -19,7 +19,7 @@ header_name = ['periodRenew','id','birthDate','age','civilStatus','gender','scho
               'incomeOther','incomeTotal','houseExpensesHouseholder','foodExpensesHouseholder',
               'transportExpensesHouseholder','medicalExpensesHouseholder','dentalExpensesHouseholder',
               'studyExpensesHouseholder','servicesExpensesHouseholder','condominiumExpensesHouseholder',
-              'otherExpensesHouseholder','totalExpensesHouseholder','raiting','reviewsUsers']
+              'otherExpensesHouseholder','totalExpensesHouseholder','raiting']
 
 #Cargando los datos
 dataframe = pd.read_csv(input_data_path,skiprows=1,header=None,encoding='utf-8')
@@ -42,8 +42,6 @@ output_dataframe.id = dataframe[2].drop_duplicates()
 dataframe[3] = dataframe[3].str.replace('[\s|/]','-').str.replace('^\d+\-\d+\-\d{2}$',lambda str: str.group(0)[:-2]+'19'+str.group(0)[-2:])
 output_dataframe.birthDate = pd.to_datetime(dataframe[3],errors='coerce',dayfirst=True) #formato yyyy-mm-dd
 output_dataframe.birthDate = output_dataframe.birthDate.fillna(output_dataframe.birthDate.mode().iloc[1])
-#Limpiando la Edad
-output_dataframe.age = dataframe[4].str.extract('(\d{2})',re.IGNORECASE).astype('int')
 
 #Limpiando el Edo Civil
 output_dataframe.civilStatus = dataframe[5].replace(['Viudo (a)','Casado (a)','Soltero (a)','Unido (a)'],[0,1,2,np.nan])
@@ -69,9 +67,6 @@ output_dataframe.isMarried = dataframe[29].replace(['Si','No'],[1,0]) .astype('i
 output_dataframe.isBenefitUniversity = dataframe[30].replace(['Si','No'],[1,0]).astype('int')
 output_dataframe.isEconomicActivity = dataframe[32].replace(['Si','No'],[1,0]).astype('int')
 
-#Limpiando el motivo de mudanza
-#output_dataframe.reasonChange = dataframe[12].fillna('NA')
-
 #El numero de materias inscritas la dejamos igual
 output_dataframe.coursesEnrolled = dataframe[13].astype('int')
 
@@ -89,9 +84,6 @@ output_dataframe.weightedAverage = dataframe[17].astype('string').str.replace('\
 
 #Limpiando la columna de eficiencia
 output_dataframe.efficiency = dataframe[18].astype('string').str.replace('\.','').str.replace('(\d)+', lambda str : '0.'+str.group(0)[1:] if int(str.group(0)[:1])>1 else str.group(0)[:1]+'.'+str.group(0)[1:])
-
-#Limpiando la columna motivo de reprobacion
-output_dataframe.coursesFailedReason = dataframe[19].fillna('NA')
 
 #El numero de materias inscritas en el semestre actual lo dejamos igual
 output_dataframe.coursesCurrent = dataframe[20].astype('int')
@@ -122,10 +114,11 @@ output_dataframe.scholarship = dataframe[34].apply(lambda x : 1500 if x <= 1500 
 #Limpiando las columnas de los ingresos y egresos del Estudiante
 
 dataframe.ix[:,35:48] = dataframe.ix[:,35:48].replace(np.nan,0)
+
 output_dataframe.contributionHouseholder = dataframe[35]
 output_dataframe.contributionFamily = dataframe[36]
 output_dataframe.contributionActivities = dataframe[37]
-#output_dataframe.contributionMonthlyTotal = dataframe[38] - (output_dataframe.scholarship + output_dataframe.contributionHouseholder + output_dataframe.contributionFamily + output_dataframe.contributionActivities)
+output_dataframe.contributionMonthlyTotal = output_dataframe.scholarship + output_dataframe.contributionHouseholder + output_dataframe.contributionFamily + output_dataframe.contributionActivities
 output_dataframe.foodExpenses = dataframe[39]
 output_dataframe.transportExpenses = dataframe[40]
 output_dataframe.medicalExpenses = dataframe[41]
@@ -135,16 +128,39 @@ output_dataframe.rentExpenses = dataframe[44]
 output_dataframe.studyMaterialExpenses = dataframe[45]
 output_dataframe.recreationalExpenses = dataframe[46]
 output_dataframe.otherExpenses = dataframe[47]
-#output_dataframe.totalExpenses = dataframe[48] - (output_dataframe.foodExpenses + output_dataframe.transportExpenses + output_dataframe.medicalExpenses + output_dataframe.dentalExpenses + output_dataframe.personalExpenses + output_dataframe.rentExpenses + output_dataframe.studyMaterialExpenses + output_dataframe.recreationalExpenses + output_dataframe.otherExpenses)
+output_dataframe.totalExpenses = output_dataframe.foodExpenses + output_dataframe.transportExpenses + output_dataframe.medicalExpenses + output_dataframe.dentalExpenses + output_dataframe.personalExpenses + output_dataframe.rentExpenses + output_dataframe.studyMaterialExpenses + output_dataframe.recreationalExpenses + output_dataframe.otherExpenses
 
 #Limpiando la columna responsable economico
 output_dataframe.howHouseholder = dataframe[49].str.lower().replace([r'madre',r'padre',r'ambos.*',ur'cónyugue|esposo',r'.*(familiares|tia|hermano|hermana|abuela).*',r'usted.*|ninguno'],range(6),regex=True)
 
 #El numero de cargafamiliar lo dejamos igual
-
 output_dataframe.familyBurden = dataframe[50]
 
-dataframe.ix[:,52:63] = dataframe.ix[:,52:63].replace(np.nan,0)
+#Primer paso limpiando los ingresos/egresos del responsable ecconomico
+dataframe.ix[:,51:63] = dataframe.ix[:,51:63].replace(np.nan,0)
+#Segundo paso limpiando los ingresos/egresos del responsable economico
+dataframe.ix[:,51:63] = dataframe.ix[:,51:63].replace([r'No|comodato|o'],0,regex=True)
 
+for i in range(51, 64):
+    dataframe[i] = dataframe[i].astype('string').str.replace(' ','').str.replace(',','.').str.replace('bs|\+','').apply(lambda x : x.replace(".","",1) if x.count('.') >= 2 else x)
 
+#Copiando las columnas al dataframe resultante
+output_dataframe.incomeHouseholder = dataframe[51].astype('float')
+output_dataframe.incomeOther = dataframe[52].astype('float')
+output_dataframe.incomeTotal = output_dataframe.incomeHouseholder + output_dataframe.incomeOther
+output_dataframe.houseExpensesHouseholder = dataframe[54].astype('float')
+output_dataframe.foodExpensesHouseholder = dataframe[55].astype('float')
+output_dataframe.transportExpensesHouseholder = dataframe[56].astype('float')
+output_dataframe.medicalExpensesHouseholder = dataframe[57].astype('float')
+output_dataframe.dentalExpensesHouseholder = dataframe[58].astype('float')
+output_dataframe.studyExpensesHouseholder = dataframe[59].astype('float')
+output_dataframe.servicesExpensesHouseholder = dataframe[60].astype('float')
+output_dataframe.condominiumExpensesHouseholder = dataframe[61].astype('float')
+output_dataframe.otherExpensesHouseholder = dataframe[62].astype('float')
+output_dataframe.totalExpensesHouseholder = output_dataframe.houseExpensesHouseholder + output_dataframe.foodExpensesHouseholder + output_dataframe.transportExpensesHouseholder + output_dataframe.medicalExpensesHouseholder + output_dataframe.dentalExpensesHouseholder + output_dataframe.studyExpensesHouseholder + output_dataframe.servicesExpensesHouseholder + output_dataframe.condominiumExpensesHouseholder + output_dataframe.otherExpensesHouseholder
+
+#La columna de raiting la dejamos igual
+output_dataframe.raiting = dataframe[64]
+
+#Escribiendo en el archivo de salida (Vista Minable)
 output_dataframe.to_csv(output_data_path, encoding='utf-8',index=False)
