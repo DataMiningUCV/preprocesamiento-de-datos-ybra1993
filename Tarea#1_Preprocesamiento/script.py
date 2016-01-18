@@ -6,7 +6,7 @@ import matplotlib as matplot
 import re
 input_data_path = 'data/data_input.csv' #Data de entrada
 output_data_path = 'data/output_data.csv' #Data de salida - Vista Minable
-header_name = ['periodRenew','id','birthDate','civilStatus','gender','school',
+header_name = ['periodYearRenew', 'periodNumberRenew','id','birthDate','civilStatus','gender','school',
               'admissionYear','admissionForm','coursesSemester',
               'coursesEnrolled','coursesApproved','coursesRemoved','coursesFailed',
               'weightedAverage','efficiency','coursesCurrent',
@@ -34,6 +34,9 @@ period.update(period_p2)
 
 period.nro = period.nro.str.replace('pri(mero)?|i|0?1s?', '1', flags=re.IGNORECASE).str.replace('seg(undo)?|ii|0?2s?', '2', flags=re.IGNORECASE)
 period.year = period.year.str.replace('^\d{2}$', lambda str: '20'+str)
+
+output_dataframe.periodNumberRenew = period.nro.fillna(period.nro.mode().iloc[0])
+output_dataframe.periodYearRenew = period.year.fillna(period.year.mode().iloc[0]).astype('int')
 
 #Limpiando el id por si acaso no hay repetidos
 output_dataframe.id = dataframe[2].drop_duplicates()
@@ -80,10 +83,10 @@ output_dataframe.coursesRemoved = dataframe[15].astype('int')
 output_dataframe.coursesFailed = dataframe[16]
 
 #Limpiando la columna de promedio ponderado
-output_dataframe.weightedAverage = dataframe[17].astype('string').str.replace('\.','').str.replace('(\d)+', lambda str : str.group(0)[:1]+'.'+str.group(0)[1:] if int(str.group(0)[:1])>2 else str.group(0)[:2]+'.'+str.group(0)[2:])
+output_dataframe.weightedAverage = dataframe[17].apply(lambda x: float(x) if x>=0 and x<=20 else (float(x)/1000.0 if x>=1000 and x<=20000 else np.nan))
 
 #Limpiando la columna de eficiencia
-output_dataframe.efficiency = dataframe[18].astype('string').str.replace('\.','').str.replace('(\d)+', lambda str : '0.'+str.group(0)[1:] if int(str.group(0)[:1])>1 else str.group(0)[:1]+'.'+str.group(0)[1:])
+output_dataframe.efficiency = dataframe[18].apply(lambda x: float(x) if x>=0 and x<=1 else (float(x)/10000.0 if x>=1000 and x<=10000 else np.nan))
 
 #El numero de materias inscritas en el semestre actual lo dejamos igual
 output_dataframe.coursesCurrent = dataframe[20].astype('int')
@@ -102,8 +105,7 @@ output_dataframe.residency = dataframe[24].replace([r'.*Libertador+.*',r'.*Sucre
 output_dataframe.residency = output_dataframe.residency.fillna(output_dataframe.residency.mode().iloc[0]).astype('int')
 
 #Limpiando la columna con quien vive
-#HAY QUE ARREGLAR
-output_dataframe.roomies = dataframe[25]#.str.lower().replace([r'ambos.*',r'.*madre.*',r'.*padre.*',r'.*herman.*',r'.*sol(o|a)',r'.*maternos.*',r'.*paternos.*'],range(7),regex=True)
+output_dataframe.roomies = dataframe[25].replace([r'.*padres.*',r'.*(esposo(?<!su)|hijo).*',r'.*(mamá|madre).*',r'.*(papá|padre).*',r'.+maternos.*',r'.+paternos.*',r'sol[oa]',r'.+'], range(8), regex=True)
 
 #Limpiando la columna tipo de vivienda
 output_dataframe.houseType = dataframe[26].str.lower().replace([r'.*quinta.*',r'.*edific.*',r'.*urbano.*',r'.*rural.*',r'.*alquilada.*',r'.*vecindad.*',r'.*estudiantil.*'],range(7),regex=True)
@@ -163,4 +165,4 @@ output_dataframe.totalExpensesHouseholder = output_dataframe.houseExpensesHouseh
 output_dataframe.raiting = dataframe[64]
 
 #Escribiendo en el archivo de salida (Vista Minable)
-output_dataframe.to_csv(output_data_path, encoding='utf-8',index=False)
+output_dataframe.to_csv(output_data_path, encoding='utf-8',index=False, float_format='%.3f', date_format='%d/%m/%Y')
